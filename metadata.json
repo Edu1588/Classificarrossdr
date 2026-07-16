@@ -1,0 +1,8 @@
+{
+  "name": "SDR Lead Classification",
+  "description": "Ferramenta de SDR com fluxo de chat para metrificar e classificar a maturidade de compra de leads automotivos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
