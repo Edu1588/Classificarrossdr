@@ -11,7 +11,7 @@ export default function ChatPage() {
     {
       id: 'msg-0',
       sender: 'bot',
-      text: 'Olá! Seja bem vindo a Classificarros.\n\nQual seu nome?',
+      text: 'Olá! Seja bem-vindo à Classificarros.\n\nPara que eu consiga te atender melhor, qual o seu nome?',
     },
   ]);
   const [step, setStep] = useState<string>('START');
@@ -107,7 +107,7 @@ export default function ChatPage() {
       {
         id: `msg-${Date.now()}`,
         sender: 'bot',
-        text: 'Olá! Seja bem vindo a Classificarros.\n\nQual seu nome?',
+        text: 'Olá! Seja bem-vindo à Classificarros.\n\nPara que eu consiga te atender melhor, qual o seu nome?',
       },
     ]);
     setStep('START');
@@ -116,29 +116,34 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans text-slate-800">
-      <div className="w-full max-w-3xl mx-auto h-[90vh] flex flex-col">
+    <div className="min-h-screen bg-zinc-900 flex items-center justify-center p-4 font-sans text-slate-800">
+      <div className="w-full max-w-4xl mx-auto h-[90vh] flex flex-col">
         
         {/* CHATBOT SECTION */}
-        <div className="h-full bg-white rounded-2xl shadow-xl border border-slate-200 flex flex-col overflow-hidden relative">
+        <div className="h-full bg-zinc-50 rounded-2xl shadow-2xl border border-zinc-800 flex flex-col overflow-hidden relative">
           {/* Header */}
-          <div className="bg-blue-600 text-white p-4 flex justify-between items-center shadow-md z-10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <Car className="w-6 h-6" />
-              </div>
-              <div>
-                <h1 className="font-semibold text-lg leading-tight">Classificarros</h1>
-                <p className="text-blue-100 text-xs flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
-                  Online
+          <div className="bg-zinc-950 text-white p-4 flex flex-col sm:flex-row justify-between items-center shadow-md z-10 gap-4">
+            <div className="flex items-center gap-4">
+              <img 
+                src="https://classificarros.com.br/img/classificarros-logo-white.svg" 
+                alt="Classificarros" 
+                className="h-8"
+              />
+              <div className="hidden sm:block border-l border-zinc-700 h-8 pl-4">
+                <p className="text-zinc-300 text-xs flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                  Assistente Online
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4 text-xs text-zinc-300">
+              <div className="hidden md:flex flex-col text-right">
+                <span>Rua Carolina Florence, 410 - Guanabara - Campinas/SP</span>
+                <span className="text-red-500 font-medium whitespace-nowrap">WhatsApp: (19) 9 9122-9804</span>
+              </div>
               <button 
                 onClick={resetFlow}
-                className="p-2 hover:bg-white/20 rounded-lg transition-colors flex items-center gap-2 text-sm"
+                className="p-2 bg-zinc-800 hover:bg-red-600 rounded-lg transition-colors flex items-center gap-2 text-sm text-white"
                 title="Reiniciar conversa"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -147,7 +152,7 @@ export default function ChatPage() {
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#e5ddd5]" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cubes.png")' }}>
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-100" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cubes.png")' }}>
             <AnimatePresence initial={false}>
               {messages.map((msg) => (
                 <motion.div
@@ -160,8 +165,8 @@ export default function ChatPage() {
                     <div className="flex flex-col gap-1 mt-1">
                       <div className={`px-4 py-2 rounded-2xl whitespace-pre-wrap text-[15px] leading-relaxed shadow-sm relative ${
                         msg.sender === 'user' 
-                          ? 'bg-[#d9fdd3] text-slate-800 rounded-tr-sm' 
-                          : 'bg-white text-slate-800 rounded-tl-sm'
+                          ? 'bg-zinc-800 text-white rounded-tr-sm' 
+                          : 'bg-white text-zinc-800 border border-zinc-200 rounded-tl-sm'
                       }`}>
                         {msg.text}
                       </div>
@@ -175,10 +180,10 @@ export default function ChatPage() {
               {isTyping && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
                   <div className="flex gap-2 max-w-[85%]">
-                     <div className="px-4 py-3 bg-white rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-1.5 h-10">
-                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></div>
+                     <div className="px-4 py-3 bg-white border border-zinc-200 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-1.5 h-10">
+                        <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                        <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                        <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-bounce"></div>
                      </div>
                   </div>
                 </motion.div>
@@ -188,7 +193,7 @@ export default function ChatPage() {
           </div>
 
           {/* Input Area */}
-          <div className="p-3 bg-[#f0f2f5] flex items-center gap-2">
+          <div className="p-3 bg-zinc-200 border-t border-zinc-300 flex items-center gap-2">
             <form 
               onSubmit={(e) => { e.preventDefault(); handleSend(inputValue); }}
               className="flex gap-2 w-full"
@@ -199,19 +204,24 @@ export default function ChatPage() {
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Digite uma mensagem..."
                 disabled={isTyping || step.startsWith('END_')}
-                className="flex-1 px-4 py-3 bg-white border-none rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all disabled:opacity-50 shadow-sm text-[15px]"
+                className="flex-1 px-4 py-3 bg-white border-none rounded-full focus:outline-none focus:ring-2 focus:ring-red-600 transition-all disabled:opacity-50 shadow-sm text-[15px] text-zinc-900 placeholder:text-zinc-400"
               />
               <button
                 type="submit"
                 disabled={!inputValue.trim() || isTyping || step.startsWith('END_')}
-                className="w-12 h-12 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shrink-0 shadow-sm"
+                className="w-12 h-12 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shrink-0 shadow-sm"
               >
                 <Send className="w-5 h-5 ml-1" />
               </button>
             </form>
           </div>
         </div>
-
+        
+        {/* Mobile Contact Info */}
+        <div className="md:hidden mt-4 text-center text-zinc-400 text-xs space-y-1">
+          <p>Rua Carolina Florence, 410 - Guanabara - Campinas/SP</p>
+          <p className="text-red-500 font-medium">WhatsApp: (19) 9 9122-9804</p>
+        </div>
       </div>
     </div>
   );

@@ -21,6 +21,7 @@ REGRAS:
 1. Filtre ofensas: Se o usuário disser algo ofensivo, palavrões ou desrespeitoso, retorne a flag isOffensive: true e uma resposta educada pedindo respeito, sem avançar o fluxo.
 2. Seja humano, empático e amigável.
 3. Baseado no estado atual e na resposta do usuário, você deve determinar qual é o próximo passo, se há algum dado a ser extraído (dataKey e dataValue) e qual a pontuação (scoreIncrement) para o CRM.
+4. Informações da loja: A Classificarros fica localizada na Rua Carolina Florence, 410 - Guanabara - Campinas/SP. O WhatsApp para contato direto é (19) 9 9122-9804. Forneça estas informações se o usuário perguntar.
 
 ESTADO ATUAL (currentState): ${currentState}
 
