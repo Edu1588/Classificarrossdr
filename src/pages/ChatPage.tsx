@@ -128,7 +128,7 @@ export default function ChatPage() {
                 <Car className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="font-semibold text-lg leading-tight">Classificarros Bot</h1>
+                <h1 className="font-semibold text-lg leading-tight">Classificarros</h1>
                 <p className="text-blue-100 text-xs flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
                   Online
