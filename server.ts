@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
+import { GoogleGenAI, Type, Schema } from "@google/genai";
 import Groq from "groq-sdk";
 import dotenv from "dotenv";
 dotenv.config();
@@ -10,12 +11,13 @@ const PORT = 3000;
 
 app.use(express.json());
 
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
 
 // API routes FIRST
 app.post("/api/chat", async (req, res) => {
-  if (!groq) {
-    return res.status(500).json({ error: "GROQ_API_KEY environment variable is required" });
+  if (!process.env.GEMINI_API_KEY && !process.env.GROQ_API_KEY) {
+    return res.status(500).json({ error: "Pelo menos uma API KEY (GROQ_API_KEY ou GEMINI_API_KEY) é necessária" });
   }
 
   try {
@@ -34,7 +36,7 @@ ESTADO ATUAL (currentState): ${currentState}
 
 O fluxo de conversa segue esta lógica básica:
 - START: Pergunta o nome. -> GET_WHATSAPP (grava 'name')
-- GET_WHATSAPP: Solicita o número de WhatsApp, justificando que é necessário para conseguir prosseguir com o atendimento (não diga que é para entrar em contato ou manter informado). -> HELP (grava 'whatsapp')
+- GET_WHATSAPP: Solicita o número de WhatsApp dizendo estritamente que é para prosseguirmos com o atendimento. É PROIBIDO usar palavras como "contatar", "entrar em contato", "manter informado" ou "te avisar". -> HELP (grava 'whatsapp')
 - HELP: Pergunta se quer Comprar/Trocar, Vender, Simular Financiamento ou Outros.
   - Se quer comprar/trocar -> COMPRAR_1 (intent: 'Comprar/Trocar', score: 5)
   - Se quer vender -> VENDER_1 (intent: 'Vender', score: 5)
@@ -73,37 +75,94 @@ Fluxo SIMULAR:
   - curto prazo -> END_SIMULAR (prazo_compra: 'Curto prazo', score: 15)
   - medio/longo -> END_SIMULAR (prazo_compra: 'Médio/Longo prazo', score: 5)
 
-Sempre retorne APENAS um JSON válido com o seguinte formato:
-{
-  "isOffensive": boolean,
-  "botText": "Sua resposta humanizada e contextualizada (Faça perguntas abertas, NUNCA dê opções fechadas em formato de lista)",
-  "nextStep": "NOME_DO_PROXIMO_ESTADO",
-  "dataKey": "chave do dado extraido, null se não houver",
-  "dataValue": "valor do dado extraido, null se não houver",
-  "scoreIncrement": numero (0 se não houver incremento)
-}
-`;
+Sempre retorne APENAS um JSON válido.`;
 
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...conversationHistory.map((msg: any) => ({
-          role: msg.sender === 'bot' ? 'assistant' : 'user',
-          content: msg.text
-        })),
-        { role: "user", content: message }
-      ],
-      model: "llama-3.3-70b-versatile",
-      temperature: 0.5,
-      response_format: { type: "json_object" },
-    });
+    const responseSchema: Schema = {
+      type: Type.OBJECT,
+      properties: {
+        isOffensive: {
+          type: Type.BOOLEAN,
+        },
+        botText: {
+          type: Type.STRING,
+          description: "Sua resposta humanizada e contextualizada (Faça perguntas abertas, NUNCA dê opções fechadas em formato de lista)"
+        },
+        nextStep: {
+          type: Type.STRING,
+          description: "NOME_DO_PROXIMO_ESTADO"
+        },
+        dataKey: {
+          type: Type.STRING,
+          description: "chave do dado extraido, null se não houver",
+          nullable: true
+        },
+        dataValue: {
+          type: Type.STRING,
+          description: "valor do dado extraido, null se não houver",
+          nullable: true
+        },
+        scoreIncrement: {
+          type: Type.INTEGER,
+          description: "numero (0 se não houver incremento)"
+        }
+      },
+      required: ["isOffensive", "botText", "nextStep", "scoreIncrement"]
+    };
 
-    const content = chatCompletion.choices[0]?.message?.content || "{}";
-    const result = JSON.parse(content);
+    let result;
+
+    try {
+      if (!groq) throw new Error("Groq API não configurada");
+      
+      const chatCompletion = await groq.chat.completions.create({
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...conversationHistory.map((msg: any) => ({
+            role: msg.sender === 'bot' ? 'assistant' : 'user',
+            content: msg.text
+          })),
+          { role: "user", content: message }
+        ],
+        model: "llama-3.1-8b-instant",
+        temperature: 0.5,
+        response_format: { type: "json_object" },
+      });
+
+      const content = chatCompletion.choices[0]?.message?.content || "{}";
+      result = JSON.parse(content);
+    } catch (groqError: any) {
+      console.warn("Groq falhou (provavelmente rate limit). Alternando para Gemini como fallback.", groqError.message);
+      
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GROQ falhou e GEMINI_API_KEY não configurada para fallback.");
+      }
+
+      const historyMessages = conversationHistory.map((msg: any) => ({
+        role: msg.sender === 'bot' ? 'model' : 'user',
+        parts: [{ text: msg.text }]
+      }));
+  
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [
+          ...historyMessages,
+          { role: 'user', parts: [{ text: message }] }
+        ],
+        config: {
+          systemInstruction: systemPrompt,
+          temperature: 0.5,
+          responseMimeType: "application/json",
+          responseSchema: responseSchema,
+        }
+      });
+  
+      const content = response.text || "{}";
+      result = JSON.parse(content);
+    }
     
     res.json(result);
   } catch (error: any) {
-    console.error("Groq API Error:", error);
+    console.error("API Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
