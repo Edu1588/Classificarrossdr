@@ -75,7 +75,15 @@ Fluxo SIMULAR:
   - curto prazo -> END_SIMULAR (prazo_compra: 'Curto prazo', score: 15)
   - medio/longo -> END_SIMULAR (prazo_compra: 'Médio/Longo prazo', score: 5)
 
-Sempre retorne APENAS um JSON válido.`;
+Sempre retorne APENAS um JSON válido com a seguinte estrutura:
+{
+  "isOffensive": boolean,
+  "botText": "Sua resposta humanizada e contextualizada (Faça perguntas abertas, NUNCA dê opções fechadas em formato de lista)",
+  "nextStep": "NOME_DO_PROXIMO_ESTADO",
+  "dataKey": "chave do dado extraido, null se não houver",
+  "dataValue": "valor do dado extraido, null se não houver",
+  "scoreIncrement": numero (0 se não houver incremento)
+}`;
 
     const responseSchema: Schema = {
       type: Type.OBJECT,
