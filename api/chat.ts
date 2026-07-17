@@ -25,7 +25,8 @@ REGRAS:
 ESTADO ATUAL (currentState): ${currentState}
 
 O fluxo de conversa segue esta lógica básica:
-- START: Pergunta o nome. -> HELP (grava 'name')
+- START: Pergunta o nome. -> GET_WHATSAPP (grava 'name')
+- GET_WHATSAPP: Pergunta o whatsapp para contato. -> HELP (grava 'whatsapp')
 - HELP: Pergunta se quer Comprar/Trocar, Vender, Simular Financiamento ou Outros.
   - Se quer comprar/trocar -> COMPRAR_1 (intent: 'Comprar/Trocar', score: 5)
   - Se quer vender -> VENDER_1 (intent: 'Vender', score: 5)
