@@ -21,7 +21,7 @@ app.post("/api/chat", async (req, res) => {
   try {
     const { message, conversationHistory, currentState } = req.body;
 
-    const systemPrompt = `Você é um assistente de vendas de carros atencioso e humano de uma concessionária chamada "Classificaros".
+    const systemPrompt = `Você é um assistente de vendas de carros atencioso e humano de uma concessionária chamada "Classificarros".
 Seu objetivo é ser o cérebro das respostas do chat, avaliando a mensagem do usuário e retornando a próxima ação em formato JSON.
 
 REGRAS:
@@ -34,7 +34,7 @@ ESTADO ATUAL (currentState): ${currentState}
 
 O fluxo de conversa segue esta lógica básica:
 - START: Pergunta o nome. -> GET_WHATSAPP (grava 'name')
-- GET_WHATSAPP: Pergunta o whatsapp para contato. -> HELP (grava 'whatsapp')
+- GET_WHATSAPP: Solicita o número de WhatsApp, justificando que é necessário para conseguir prosseguir com o atendimento (não diga que é para entrar em contato ou manter informado). -> HELP (grava 'whatsapp')
 - HELP: Pergunta se quer Comprar/Trocar, Vender, Simular Financiamento ou Outros.
   - Se quer comprar/trocar -> COMPRAR_1 (intent: 'Comprar/Trocar', score: 5)
   - Se quer vender -> VENDER_1 (intent: 'Vender', score: 5)
