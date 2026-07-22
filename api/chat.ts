@@ -83,9 +83,9 @@ ${validLeads.map((l: any) => `- Nome: ${l.name}, WhatsApp: ${l.whatsapp}`).join(
 
        if (needsMoreFiltering) {
            inventoryContext = `\n\n[INFORMAÇÃO DE SISTEMA: REQUER FILTRAGEM DE MODELO]
-O usuário citou apenas a marca genérica "${brandFound?.toUpperCase()}" mas não especificou qual modelo, ano ou faixa de preço deseja.
-Você NÃO deve listar todos os veículos disponíveis desta marca ainda e NÃO deve enviar links!
-Em vez disso, de forma muito simpática e direta, comente que temos ótimas opções dessa marca em estoque, e pergunte qual modelo específico ele tem interesse (ex: pergunte se ele busca algum modelo em específico), ano ou faixa de preço de preferência para podermos filtrar e trazer a melhor opção.`;
+O usuário citou apenas a marca genérica "${brandFound?.toUpperCase()}".
+ATENÇÃO CRÍTICA: Você é PROIBIDO de dizer ao usuário "você mencionou a marca X mas não especificou o modelo" ou qualquer frase do tipo. Isso é robótico e anti-amigável.
+Em vez disso, fale de forma 100% natural, calorosa e humanizada. Diga algo exatamente como: "Ah legal, ${brandFound?.charAt(0).toUpperCase()}${brandFound?.slice(1)}! Temos ótimas opções dessa marca em estoque. Tem algum modelo específico que você está procurando, ou ano e faixa de preço de preferência para eu filtrar melhor para você?" e salve o fluxo perguntando por isso de forma direta.`;
         } else if (matchedVehicles.length > 0) {
           // Pick top 5 matches
           matchedVehicles = matchedVehicles.slice(0, 5);
