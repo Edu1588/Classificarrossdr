@@ -1,9 +1,6 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import Groq from "groq-sdk";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
-
 // Inventory Cache
 let cachedVehicles: any[] = [];
 let lastFetchTime = 0;
@@ -21,8 +18,6 @@ async function getVehicles() {
   return cachedVehicles;
 }
 
-export const maxDuration = 60;
-
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
@@ -33,7 +28,11 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { message, conversationHistory, currentState, knownLeads } = req.body;
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+    const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
+
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const { message, conversationHistory, currentState, knownLeads } = body;
     
     let inventoryContext = "";
     
