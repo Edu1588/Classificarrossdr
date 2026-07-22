@@ -6,7 +6,7 @@ import { calculateMaturity } from '../engine';
 import { useLead } from '../context/LeadContext';
 
 export default function ChatWidget() {
-  const { currentLead, setCurrentLead, addOrUpdateLead, createNewLeadSession } = useLead();
+  const { currentLead, setCurrentLead, addOrUpdateLead, createNewLeadSession, leads } = useLead();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
