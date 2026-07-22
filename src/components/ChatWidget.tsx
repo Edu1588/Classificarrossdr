@@ -45,7 +45,8 @@ export default function ChatWidget() {
           message: text,
           conversationHistory: newMessages,
           currentState: step,
-          leadData: currentLead
+          leadData: currentLead,
+          knownLeads: leads.map(l => ({ name: l.name, whatsapp: l.details?.whatsapp }))
         }),
       });
       const data = await response.json();

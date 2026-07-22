@@ -31,12 +31,24 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { message, conversationHistory, currentState } = req.body;
+    const { message, conversationHistory, currentState, knownLeads } = req.body;
     
     let inventoryContext = "";
     
+    let knownLeadsContext = "";
+    if (knownLeads && knownLeads.length > 0) {
+        const validLeads = knownLeads.filter((l: any) => l.whatsapp);
+        if (validLeads.length > 0) {
+            knownLeadsContext = `\n\n[INFORMAÇÃO DE SISTEMA: CLIENTES RECORRENTES]
+Se o usuário informar um WhatsApp que já existe em nosso banco de dados, você DEVE reconhecê-mo e dizer algo como "Bem-vindo de volta, [Nome do Cliente]!" em vez de apenas agradecer.
+Leads já cadastrados:
+${validLeads.map((l: any) => `- Nome: ${l.name}, WhatsApp: ${l.whatsapp}`).join('\n')}
+`;
+        }
+    }
+    
     // Inject inventory context when the user is trying to find a car
-    if (['COMPRAR_INFORME_CARRO', 'COMPRAR_FAIXA_PRECO', 'COMPRAR_PREFERENCIA', 'COMPRAR_FAIXA_PRECO_2', 'COMPRAR_NEGOCIACAO', 'COMPRAR_1'].includes(currentState)) {
+    if (['HELP', 'COMPRAR_INFORME_CARRO', 'COMPRAR_FAIXA_PRECO', 'COMPRAR_PREFERENCIA', 'COMPRAR_FAIXA_PRECO_2', 'COMPRAR_NEGOCIACAO', 'COMPRAR_1'].includes(currentState)) {
        const vehicles = await getVehicles();
        // Basic search to find matching vehicles
        const searchTerms = message.toLowerCase().split(' ').filter((w: string) => w.length > 2);
@@ -62,7 +74,7 @@ VOCÊ DEVE OFERECER E RECOMENDAR ESSES VEÍCULOS citando a Marca, Modelo, Preço
 Veículos disponíveis agora:
 ${matchedVehicles.map((v: any) => `- ${v.brand} ${v.model} ${v.version} (${v.manufacturingYear}/${v.modelYear}) - R$ ${v.price.toLocaleString('pt-BR')} - KM: ${v.mileage} - Link: https://classificarros.com.br/veiculos/${v.externalId}/`).join('\n')}
 
-IMPORTANTE: Inclua os links naturalmente no texto da conversa. Se não houver muitos veículos exatamente como ele quer, ofereça o mais próximo.
+IMPORTANTE: Inclua os links naturalmente no texto da conversa. NUNCA pergunte se ele quer ver mais opções ou detalhes. Continue a venda perguntando OBRIGATORIAMENTE sobre a forma de pagamento.
 `;
        } else {
           inventoryContext = `\n\n[INFORMAÇÃO DE SISTEMA] No momento, não encontramos nenhum veículo exatamente com essa descrição no estoque. Seja empático, diga que talvez não tenha no momento mas que pode verificar opções parecidas ou pegar o pedido dele.`;
@@ -76,22 +88,24 @@ REGRAS:
 1. Filtre ofensas: Se o usuário disser algo ofensivo, palavrões ou desrespeitoso, retorne a flag isOffensive: true e uma resposta educada pedindo respeito, sem avançar o fluxo. Atenção: Mensagens sem sentido (ex: "ghghgh", "asdasd") NÃO são ofensas. Se não entender, não marque como ofensivo, apenas peça para o usuário esclarecer.
 2. Seja humano, empático e amigável.
 3. Baseado no estado atual e na resposta do usuário, você deve determinar qual é o próximo passo, se há algum dado a ser extraído (dataKey e dataValue) e qual a pontuação (scoreIncrement) para o CRM.
-4. Informações da loja: A Classificarros fica localizada na Rua Carolina Florence, 410 - Guanabara - Campinas/SP. O WhatsApp para contato direto é (19) 9 9122-9804. Forneça estas informações se o usuário perguntar.${inventoryContext}
+4. Informações da loja: A Classificarros fica localizada na Rua Carolina Florence, 410 - Guanabara - Campinas/SP. O WhatsApp para contato direto é (19) 9 9122-9804. Forneça estas informações se o usuário perguntar.${inventoryContext}${knownLeadsContext}
 5. CRÍTICO: Sempre que o próximo passo (nextStep) NÃO começar com "END_", você DEVE OBRIGATORIAMENTE terminar sua resposta (botText) com a pergunta correspondente para avançar no funil. Se não perguntar, a conversa trava! Nunca deixe o usuário sem uma pergunta no final.
+6. FOCO EM VENDAS: Nosso objetivo é VENDER. Se o cliente mencionar o nome de um carro (ex: "Civic", "Corolla", "Gol") em QUALQUER momento do funil, ASSUMA IMEDIATAMENTE que ele quer COMPRAR esse carro e PULE para o estado "COMPRAR_NEGOCIACAO". Você DEVE checar o estoque, apresentar as opções disponíveis (fornecendo os links) e, na mesma mensagem, OBRIGATORIAMENTE engatar a conversa perguntando COMO ELE PRETENDE PAGAR (à vista, com troca ou financiamento). É ESTRITAMENTE PROIBIDO perguntar se ele quer saber mais sobre o carro ou se quer ver outras opções. Termine a mensagem EXATAMENTE perguntando sobre a forma de pagamento. Exemplo de como você DEVE responder: "Ótima escolha! [aqui cite as opções com os links]. Como você pretende pagar: à vista, com troca ou financiamento?". (dataKey: "carro_desejado", dataValue: <carro>)
 
 ESTADO ATUAL (currentState): ${currentState}
 
-Siga ESTRITAMENTE a lógica de transição de estados abaixo. Para o ESTADO ATUAL informado, avalie a resposta do usuário para determinar o nextStep e a pergunta a ser feita:
+Siga ESTRITAMENTE a lógica de transição de estados abaixo (EXCETO SE A REGRA 6 SE APLICAR). Para o ESTADO ATUAL informado, avalie a resposta do usuário para determinar o nextStep e a pergunta a ser feita:
 - Se ESTADO ATUAL = "START": O usuário informou o nome. Ação: Chame-o pelo nome e solicite o número de WhatsApp dizendo ESTRITAMENTE que é para prosseguirmos com o atendimento. (nextStep: "GET_WHATSAPP", dataKey: "name", dataValue: <nome extraido>)
 - Se ESTADO ATUAL = "GET_WHATSAPP": O usuário informou o WhatsApp. Ação: Agradeça e pergunte como ele quer ser ajudado (Comprar/Trocar, Vender, Simular Financiamento ou Outros). (nextStep: "HELP", dataKey: "whatsapp", dataValue: <whatsapp extraido>)
 - Se ESTADO ATUAL = "HELP":
-  - Se quer comprar/trocar -> nextStep: "COMPRAR_1". Pergunta se já viu no site, quer por preço ou tá indeciso. (dataKey: "intent", dataValue: "Comprar/Trocar", scoreIncrement: 5)
+  - Se quer comprar/trocar -> Se ele JÁ MENCIONOU o carro (ex: "quero um civic"), nextStep: "COMPRAR_NEGOCIACAO". Extraia o carro (dataKey: "carro_desejado"). Caso contrário, nextStep: "COMPRAR_1" e pergunte se já viu no site, quer por preço ou tá indeciso. (dataKey: "intent", dataValue: "Comprar/Trocar", scoreIncrement: 5)
   - Se quer vender -> nextStep: "VENDER_1". Pede marca/modelo. (dataKey: "intent", dataValue: "Vender", scoreIncrement: 5)
   - Se quer simular -> nextStep: "SIMULAR_ENTRADA". Pede o valor da entrada. (dataKey: "intent", dataValue: "Financiamento", scoreIncrement: 5)
   - Se outros -> nextStep: "OUTRAS_ASSUNTO".
 
 Fluxo COMPRAR:
 - Se ESTADO ATUAL = "COMPRAR_1":
+  - Se ele disser o nome do carro (ex: "civic") -> nextStep: "COMPRAR_NEGOCIACAO". Extrai o carro e pergunta como vai pagar (à vista, com troca, financiar). (dataKey: "carro_desejado", dataValue: <carro>)
   - Se disse que viu no site -> nextStep: "COMPRAR_INFORME_CARRO". Pede o modelo/ano. (dataKey: "status_escolha", dataValue: "Já escolheu", scoreIncrement: 10)
   - Se disse que procura por preço -> nextStep: "COMPRAR_FAIXA_PRECO". Pede a faixa de preço. (dataKey: "status_escolha", dataValue: "Por preço", scoreIncrement: 5)
   - Se disse estar indeciso -> nextStep: "COMPRAR_PREFERENCIA". Pede o que é importante num carro para ele. (dataKey: "status_escolha", dataValue: "Indeciso", scoreIncrement: 2)
