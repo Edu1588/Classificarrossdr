@@ -49,7 +49,7 @@ app.post("/api/chat", async (req, res) => {
             knownLeadsContext = `\n\n[INFORMAÇÃO DE SISTEMA: CLIENTES RECORRENTES]
 A identificação de um cliente recorrente DEVE ser baseada EXCLUSIVAMENTE se o número de WhatsApp informado na mensagem do usuário existe na lista abaixo.
 NUNCA faça essa verificação ou dê as boas-vindas baseado apenas no nome do usuário (nomes podem ser repetidos e você ainda não tem o telefone dele).
-Se o usuário informar um número de WhatsApp que já existe na lista abaixo, você DEVE reconhecê-lo e dizer "Bem-vindo de volta, [Nome do Cliente cadastrado]!" ao invés de tratá-lo como novo.
+Se o usuário informar um número de WhatsApp que já existe na lista abaixo, você DEVE dar as boas-vindas dizendo "Bem-vindo de volta, [Nome do Cliente cadastrado]!" e perguntar qual das seguintes opções ele deseja seguir, apresentando-as textualmente de forma natural para guiar o usuário: Comprar/Trocar um veículo, Vender seu veículo, Simular Financiamento ou Outros assuntos.
 Leads já cadastrados:
 ${validLeads.map((l: any) => `- Nome: ${l.name}, WhatsApp: ${l.whatsapp}`).join('\n')}
 `;
@@ -105,7 +105,7 @@ ESTADO ATUAL (currentState): ${currentState}
 
 Siga ESTRITAMENTE a lógica de transição de estados abaixo (EXCETO SE A REGRA 6 SE APLICAR). Para o ESTADO ATUAL informado, avalie a resposta do usuário para determinar o nextStep e a pergunta a ser feita:
 - Se ESTADO ATUAL = "START": O usuário informou o nome. Ação: Chame-o pelo nome e solicite o número de WhatsApp dizendo ESTRITAMENTE que é para prosseguirmos com o atendimento. (nextStep: "GET_WHATSAPP", dataKey: "name", dataValue: <nome extraido>)
-- Se ESTADO ATUAL = "GET_WHATSAPP": O usuário informou o WhatsApp. Ação: Agradeça e pergunte como ele quer ser ajudado (Comprar/Trocar, Vender, Simular Financiamento ou Outros). (nextStep: "HELP", dataKey: "whatsapp", dataValue: <whatsapp extraido>)
+- Se ESTADO ATUAL = "GET_WHATSAPP": O usuário informou o WhatsApp. Ação: Agradeça e pergunte de forma direta e amigável qual das seguintes opções ele deseja seguir, apresentando-as textualmente de forma natural para guiar o usuário: Comprar/Trocar um veículo, Vender seu veículo, Simular Financiamento ou Outros assuntos. (nextStep: "HELP", dataKey: "whatsapp", dataValue: <whatsapp extraido>)
 - Se ESTADO ATUAL = "HELP":
   - Se quer comprar/trocar -> Se ele JÁ MENCIONOU o carro (ex: "quero um civic"), nextStep: "COMPRAR_NEGOCIACAO". Extraia o carro (dataKey: "carro_desejado"). Caso contrário, nextStep: "COMPRAR_1" e pergunte se já viu no site, quer por preço ou tá indeciso. (dataKey: "intent", dataValue: "Comprar/Trocar", scoreIncrement: 5)
   - Se quer vender -> nextStep: "VENDER_1". Pede marca/modelo. (dataKey: "intent", dataValue: "Vender", scoreIncrement: 5)
@@ -150,7 +150,7 @@ Fluxo SIMULAR:
 Sempre retorne APENAS um JSON válido com a seguinte estrutura:
 {
   "isOffensive": boolean,
-  "botText": "Sua resposta humanizada e contextualizada (Faça perguntas abertas, NUNCA dê opções fechadas em formato de lista)",
+  "botText": "Sua resposta humanizada e contextualizada (Sempre apresente e liste de forma clara e natural as opções disponíveis para guiar a escolha do usuário)",
   "nextStep": "NOME_DO_PROXIMO_ESTADO",
   "dataKey": "chave do dado extraido, null se não houver",
   "dataValue": "valor do dado extraido, null se não houver",
@@ -164,7 +164,7 @@ Sempre retorne APENAS um JSON válido com a seguinte estrutura:
         },
         botText: {
           type: Type.STRING,
-          description: "Sua resposta humanizada e contextualizada (Faça perguntas abertas, NUNCA dê opções fechadas em formato de lista)"
+          description: "Sua resposta humanizada e contextualizada (Sempre apresente e liste de forma clara e natural as opções disponíveis para guiar a escolha do usuário)"
         },
         nextStep: {
           type: Type.STRING,
