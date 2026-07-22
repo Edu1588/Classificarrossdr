@@ -53,12 +53,16 @@ ${validLeads.map((l: any) => `- Nome: ${l.name}, WhatsApp: ${l.whatsapp}`).join(
     // Inject inventory context when the user is trying to find a car
     if (['HELP', 'COMPRAR_INFORME_CARRO', 'COMPRAR_FAIXA_PRECO', 'COMPRAR_PREFERENCIA', 'COMPRAR_FAIXA_PRECO_2', 'COMPRAR_NEGOCIACAO', 'COMPRAR_1'].includes(currentState)) {
        const vehicles = await getVehicles();
+       
+       // Extrair marcas e modelos únicos do estoque para validação inteligente
+       const allBrands = Array.from(new Set(vehicles.map((v: any) => v.brand.toLowerCase())));
+       const allModels = Array.from(new Set(vehicles.map((v: any) => v.model.toLowerCase())));
+       
        // Basic search to find matching vehicles
-       const searchTerms = message.toLowerCase().split(' ').filter((w: string) => w.length > 2);
+       const searchTerms = message.toLowerCase().split(/[ ,.\-/]+/).filter((w: string) => w.length >= 2);
        
        let matchedVehicles = vehicles.filter((v: any) => {
           const searchString = `${v.brand} ${v.model} ${v.version} ${v.manufacturingYear} ${v.color} ${v.price}`.toLowerCase();
-          // Find vehicles where at least one term matches, or just pass a few if none
           return searchTerms.some((term: string) => searchString.includes(term));
        });
        
@@ -66,16 +70,33 @@ ${validLeads.map((l: any) => `- Nome: ${l.name}, WhatsApp: ${l.whatsapp}`).join(
            matchedVehicles = vehicles;
        }
 
-       // Pick top 5 matches
-       matchedVehicles = matchedVehicles.slice(0, 5);
+       // Verificar se o usuário citou apenas marcas e nenhum modelo ou ano específico
+       const brandFound = searchTerms.find((term: string) => allBrands.includes(term));
+       const hasBrandInQuery = !!brandFound;
+       const hasModelInQuery = searchTerms.some((term: string) => allModels.includes(term) || (term.length > 3 && allModels.some((m: string) => m.includes(term) || term.includes(m))));
+       const hasYearInQuery = searchTerms.some((term: string) => /^(19|20)\d{2}$/.test(term));
        
-       if (matchedVehicles.length > 0) {
+       const matchedModelNames = Array.from(new Set(matchedVehicles.map((v: any) => v.model.toLowerCase())));
+       
+       // Se o cliente informou marca mas não informou modelo nem ano, ou se temos muitos modelos diferentes no match (> 1 modelo único)
+       const needsMoreFiltering = hasBrandInQuery && !hasModelInQuery && !hasYearInQuery && matchedModelNames.length > 1;
+
+       if (needsMoreFiltering) {
+           inventoryContext = `\n\n[INFORMAÇÃO DE SISTEMA: REQUER FILTRAGEM DE MODELO]
+O usuário citou apenas a marca genérica "${brandFound?.toUpperCase()}" mas não especificou qual modelo, ano ou faixa de preço deseja.
+Você NÃO deve listar todos os veículos disponíveis desta marca ainda e NÃO deve enviar links!
+Em vez disso, de forma muito simpática e direta, comente que temos ótimas opções dessa marca em estoque, e pergunte qual modelo específico ele tem interesse (ex: pergunte se ele busca algum modelo em específico), ano ou faixa de preço de preferência para podermos filtrar e trazer a melhor opção.`;
+        } else if (matchedVehicles.length > 0) {
+          // Pick top 5 matches
+          matchedVehicles = matchedVehicles.slice(0, 5);
           inventoryContext = `\n\n[INFORMAÇÃO DE SISTEMA: VEÍCULOS NO ESTOQUE DA LOJA DISPONÍVEIS]
 Abaixo estão opções REAIS do estoque da loja que batem com a busca do usuário.
 VOCÊ DEVE OFERECER E RECOMENDAR ESSES VEÍCULOS citando a Marca, Modelo, Preço, Ano, KM e SEMPRE enviar o LINK do veículo na sua resposta (botText) para que o cliente clique e veja as fotos no site.
 
+ATENÇÃO FORMATO: Quando apresentar ou listar os veículos recomendados, você DEVE OBRIGATORIAMENTE pular uma linha em branco entre cada veículo (usando '\\n\\n' entre eles). NUNCA apresente as opções de veículos todas juntas e emendadas no mesmo parágrafo. Deixe a resposta bem espaçada, limpa e com uma linha em branco separando as opções de carros.
+
 Veículos disponíveis agora:
-${matchedVehicles.map((v: any) => `- ${v.brand} ${v.model} ${v.version} (${v.manufacturingYear}/${v.modelYear}) - R$ ${v.price.toLocaleString('pt-BR')} - KM: ${v.mileage} - Link: https://classificarros.com.br/veiculos/${v.externalId}/`).join('\n')}
+${matchedVehicles.map((v: any) => `- ${v.brand} ${v.model} ${v.version} (${v.manufacturingYear}/${v.modelYear}) - R$ ${v.price.toLocaleString('pt-BR')} - KM: ${v.mileage} - Link: https://classificarros.com.br/veiculos/${v.externalId}/`).join('\n\n')}
 
 IMPORTANTE: Inclua os links naturalmente no texto da conversa. NUNCA pergunte se ele quer ver mais opções ou detalhes. Continue a venda perguntando OBRIGATORIAMENTE sobre a forma de pagamento.
 `;
@@ -93,7 +114,8 @@ REGRAS:
 3. Baseado no estado atual e na resposta do usuário, você deve determinar qual é o próximo passo, se há algum dado a ser extraído (dataKey e dataValue) e qual a pontuação (scoreIncrement) para o CRM.
 4. Informações da loja: A Classificarros fica localizada na Rua Carolina Florence, 410 - Guanabara - Campinas/SP. O WhatsApp para contato direto da loja é (19) 9 9122-9804. ATENÇÃO: Forneça estes dados da loja APENAS se o usuário perguntar explicitamente pelo endereço, localização ou telefone da loja. NUNCA envie ou mencione o WhatsApp da loja ao pedir o número de WhatsApp do próprio cliente. É proibido se oferecer para passar o contato da loja ou fingir que o número da loja é do cliente.${inventoryContext}${knownLeadsContext}
 5. CRÍTICO: Sempre que o próximo passo (nextStep) NÃO começar com "END_", você DEVE OBRIGATORIAMENTE terminar sua resposta (botText) com a pergunta correspondente para avançar no funil. Se não perguntar, a conversa trava! Nunca deixe o usuário sem uma pergunta no final.
-6. FOCO EM VENDAS: Nosso objetivo é VENDER. Se o cliente mencionar o nome de um carro (ex: "Civic", "Corolla", "Gol") em QUALQUER momento do funil, ASSUMA IMEDIATAMENTE que ele quer COMPRAR esse carro e PULE para o estado "COMPRAR_NEGOCIACAO". Você DEVE checar o estoque, apresentar as opções disponíveis (fornecendo os links) e, na mesma mensagem, OBRIGATORIAMENTE engatar a conversa perguntando COMO ELE PRETENDE PAGAR (à vista, com troca ou financiamento). É ESTRITAMENTE PROIBIDO perguntar se ele quer saber mais sobre o carro ou se quer ver outras opções. Termine a mensagem EXATAMENTE perguntando sobre a forma de pagamento. Exemplo de como você DEVE responder: "Ótima escolha! [aqui cite as opções com os links]. Como você pretende pagar: à vista, com troca ou financiamento?". (dataKey: "carro_desejado", dataValue: <carro>)
+6. FOCO EM VENDAS: Nosso objetivo é VENDER. Se o cliente mencionar o nome de um modelo de carro específico (ex: "Civic", "Corolla", "Gol", "Onix", "HR-V") em QUALQUER momento do funil, ASSUMA IMEDIATAMENTE que ele quer COMPRAR esse carro e PULE para o estado "COMPRAR_NEGOCIACAO". Você DEVE checar o estoque, apresentar as opções específicas disponíveis (fornecendo os links) e, na mesma mensagem, OBRIGATORIABENTE engatar a conversa perguntando COMO ELE PRETENDE PAGAR (à vista, com troca ou financiamento).
+   ATENÇÃO CRÍTICA: Se o cliente citar APENAS uma marca de forma genérica (ex: "Honda", "Chevrolet", "Ford", "Fiat") sem especificar o modelo do carro, você NÃO deve pular para o estado "COMPRAR_NEGOCIACAO" nem listar os veículos nem fornecer links! Nesse caso, permaneça no fluxo de filtragem de marcas genéricas e, de forma amigável, pergunte qual modelo de preferência ele procura (ex: se é Civic, HR-V, Fit no caso de Honda), ano ou faixa de preço. É ESTRITAMENTE PROIBIDO perguntar se ele quer saber mais sobre o carro ou se quer ver outras opções quando ele já citar o modelo. Termine a mensagem EXATAMENTE perguntando sobre a forma de pagamento apenas quando o modelo específico for definido. (dataKey: "carro_desejado", dataValue: <carro>)
 
 ESTADO ATUAL (currentState): ${currentState}
 

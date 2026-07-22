@@ -5,6 +5,37 @@ import { Message } from '../types';
 import { calculateMaturity } from '../engine';
 import { useLead } from '../context/LeadContext';
 
+const renderMessageText = (text: string) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  
+  return parts.map((part, index) => {
+    if (urlRegex.test(part)) {
+      let cleanUrl = part;
+      let suffix = "";
+      if (/[.,;:)!]$/.test(part)) {
+        cleanUrl = part.slice(0, -1);
+        suffix = part.slice(-1);
+      }
+      return (
+        <React.Fragment key={index}>
+          <a 
+            href={cleanUrl} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-[#106eca] hover:text-[#0b4e91] underline font-medium cursor-pointer transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {cleanUrl}
+          </a>
+          {suffix}
+        </React.Fragment>
+      );
+    }
+    return part;
+  });
+};
+
 export default function ChatWidget() {
   const { currentLead, setCurrentLead, addOrUpdateLead, createNewLeadSession, leads } = useLead();
   const [isOpen, setIsOpen] = useState(false);
@@ -146,12 +177,12 @@ export default function ChatWidget() {
                     animate={{ opacity: 1, y: 0 }}
                     className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className={`px-3 py-2 rounded-lg max-w-[85%] text-[14px] leading-relaxed shadow-sm relative ${
+                    <div className={`px-3 py-2 rounded-lg max-w-[85%] text-[14px] leading-relaxed shadow-sm relative whitespace-pre-wrap ${
                       msg.sender === 'user' 
                         ? 'bg-[#dcf8c6] text-slate-800 rounded-tr-none' 
                         : 'bg-white text-slate-800 rounded-tl-none'
                     }`}>
-                      {msg.text}
+                      {renderMessageText(msg.text)}
                     </div>
                   </motion.div>
                 ))}
