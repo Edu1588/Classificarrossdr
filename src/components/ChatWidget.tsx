@@ -72,6 +72,7 @@ export default function ChatWidget() {
         details: action.dataKey && action.dataKey !== 'name' && action.dataKey !== 'intent' && action.dataValue
           ? { ...currentLead.details, [action.dataKey]: action.dataValue }
           : currentLead.details,
+        durationInSeconds: Math.floor((Date.now() - currentLead.timestamp) / 1000),
       };
 
       setCurrentLead(updatedLead);

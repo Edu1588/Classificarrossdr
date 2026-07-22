@@ -15,6 +15,7 @@ export interface LeadData {
   maturity: 'Frio' | 'Morno' | 'Quente' | 'Não Classificado';
   details: Record<string, string>;
   timestamp: number;
+  durationInSeconds?: number;
 }
 
 export type StepAction = {

@@ -104,7 +104,7 @@ Fluxo COMPRAR:
   - Se só troca -> nextStep: "COMPRAR_TROCA". Pergunta o carro da troca. (dataKey: "negociacao", dataValue: 'Com Troca', scoreIncrement: 5)
   - Se só financia -> nextStep: "END_COMPRAR" (dataKey: "negociacao", dataValue: 'Financiamento', scoreIncrement: 10)
 - Se ESTADO ATUAL = "COMPRAR_TROCA" ou "COMPRAR_TROCA_FIN": nextStep: "END_COMPRAR". Extrai o carro da troca (dataKey: "carro_troca", dataValue: <carro>).
-- Se ESTADO ATUAL = "END_COMPRAR": Você chegou ao final (nextStep: "END_COMPRAR"). Envie o usuário para falar com o vendedor no WhatsApp ((19) 9 9122-9804).
+- Se ESTADO ATUAL = "END_COMPRAR": Você chegou ao final. Envie o usuário para falar com o vendedor no WhatsApp ((19) 9 9122-9804) ou finalize a conversa se ele não quiser.
 
 Fluxo VENDER:
 - Se ESTADO ATUAL = "VENDER_1": nextStep: "VENDER_ANO". Extrai marca/modelo (dataKey: "carro_venda_modelo") e pede ano.
@@ -114,7 +114,7 @@ Fluxo VENDER:
   - Se não avaliou -> nextStep: "END_VENDER" (dataKey: "status_venda", dataValue: 'Ainda não avaliou', scoreIncrement: 10)
   - Se anunciando -> nextStep: "END_VENDER" (dataKey: "status_venda", dataValue: 'Está anunciando', scoreIncrement: 2)
   - Se já avaliou -> nextStep: "END_VENDER" (dataKey: "status_venda", dataValue: 'Já avaliou', scoreIncrement: 5)
-- Se ESTADO ATUAL = "END_VENDER": Você chegou ao final (nextStep: "END_VENDER"). Envie o usuário para falar com o vendedor no WhatsApp ((19) 9 9122-9804).
+- Se ESTADO ATUAL = "END_VENDER": Você chegou ao final. Envie o usuário para falar com o vendedor no WhatsApp ou finalize.
 
 Fluxo SIMULAR:
 - Se ESTADO ATUAL = "SIMULAR_ENTRADA": nextStep: "SIMULAR_CARRO". Extrai valor (dataKey: "valor_entrada") e pede modelo do carro.
@@ -122,7 +122,7 @@ Fluxo SIMULAR:
 - Se ESTADO ATUAL = "SIMULAR_PRAZO":
   - curto prazo -> nextStep: "END_SIMULAR" (dataKey: "prazo_compra", dataValue: 'Curto prazo', scoreIncrement: 15)
   - medio/longo -> nextStep: "END_SIMULAR" (dataKey: "prazo_compra", dataValue: 'Médio/Longo prazo', scoreIncrement: 5)
-- Se ESTADO ATUAL = "END_SIMULAR": Você chegou ao final (nextStep: "END_SIMULAR"). Envie o usuário para falar com o vendedor no WhatsApp ((19) 9 9122-9804).
+- Se ESTADO ATUAL = "END_SIMULAR": Você chegou ao final. Envie o usuário para falar com o vendedor no WhatsApp ou finalize.
 
 Sempre retorne APENAS um JSON válido com a seguinte estrutura:
 {

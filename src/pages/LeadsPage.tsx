@@ -138,6 +138,7 @@ export default function LeadsPage() {
                   <th className="px-6 py-4">Intenção</th>
                   <th className="px-6 py-4">Maturidade</th>
                   <th className="px-6 py-4">Score</th>
+                  <th className="px-6 py-4">Duração</th>
                   <th className="px-6 py-4 w-full">Detalhes Coletados</th>
                 </tr>
               </thead>
@@ -163,6 +164,9 @@ export default function LeadsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="font-black text-slate-700">{lead.score} <span className="font-normal text-slate-400 text-xs">pts</span></div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-500">
+                        {lead.durationInSeconds !== undefined ? `${Math.floor(lead.durationInSeconds / 60)}m ${lead.durationInSeconds % 60}s` : '--'}
                       </td>
                       <td className="px-6 py-4 w-full">
                         <div className="flex flex-wrap gap-2 max-w-xl">
