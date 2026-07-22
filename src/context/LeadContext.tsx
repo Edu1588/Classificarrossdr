@@ -12,17 +12,16 @@ interface LeadContextType {
 export const LeadContext = createContext<LeadContextType | undefined>(undefined);
 
 export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [leads, setLeads] = useState<LeadData[]>(() => {
-    const saved = localStorage.getItem('classificarros_leads');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return [];
-      }
+  const [leads, setLeads] = useState<LeadData[]>([]);
+
+  useEffect(() => {
+    // Limpar completamente qualquer resíduo do Local Storage antigo
+    try {
+      localStorage.removeItem('classificarros_leads');
+    } catch (e) {
+      console.warn('Erro ao limpar localStorage:', e);
     }
-    return [];
-  });
+  }, []);
 
   const generateInitialLead = (): LeadData => ({
     id: `lead-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -35,10 +34,6 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [currentLead, setCurrentLead] = useState<LeadData>(generateInitialLead());
-
-  useEffect(() => {
-    localStorage.setItem('classificarros_leads', JSON.stringify(leads));
-  }, [leads]);
 
   const addOrUpdateLead = (lead: LeadData) => {
     setLeads((prev) => {
