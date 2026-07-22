@@ -37,11 +37,13 @@ export default async function handler(req: any, res: any) {
     let inventoryContext = "";
     
     let knownLeadsContext = "";
-    if (knownLeads && knownLeads.length > 0) {
+    if (knownLeads && knownLeads.length > 0 && currentState !== 'START') {
         const validLeads = knownLeads.filter((l: any) => l.whatsapp);
         if (validLeads.length > 0) {
             knownLeadsContext = `\n\n[INFORMAÇÃO DE SISTEMA: CLIENTES RECORRENTES]
-Se o usuário informar um WhatsApp que já existe em nosso banco de dados, você DEVE reconhecê-mo e dizer algo como "Bem-vindo de volta, [Nome do Cliente]!" em vez de apenas agradecer.
+A identificação de um cliente recorrente DEVE ser baseada EXCLUSIVAMENTE se o número de WhatsApp informado na mensagem do usuário existe na lista abaixo.
+NUNCA faça essa verificação ou dê as boas-vindas baseado apenas no nome do usuário (nomes podem ser repetidos e você ainda não tem o telefone dele).
+Se o usuário informar um número de WhatsApp que já existe na lista abaixo, você DEVE reconhecê-lo e dizer "Bem-vindo de volta, [Nome do Cliente cadastrado]!" ao invés de tratá-lo como novo.
 Leads já cadastrados:
 ${validLeads.map((l: any) => `- Nome: ${l.name}, WhatsApp: ${l.whatsapp}`).join('\n')}
 `;
