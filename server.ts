@@ -38,23 +38,9 @@ app.post("/api/chat", async (req, res) => {
   }
 
   try {
-    const { message, conversationHistory, currentState, knownLeads } = req.body;
+    const { message, conversationHistory, currentState } = req.body;
     
     let inventoryContext = "";
-    
-    let knownLeadsContext = "";
-    if (knownLeads && knownLeads.length > 0 && currentState !== 'START') {
-        const validLeads = knownLeads.filter((l: any) => l.whatsapp);
-        if (validLeads.length > 0) {
-            knownLeadsContext = `\n\n[INFORMAÇÃO DE SISTEMA: CLIENTES RECORRENTES]
-A identificação de um cliente recorrente DEVE ser baseada EXCLUSIVAMENTE se o número de WhatsApp informado na mensagem do usuário existe na lista abaixo.
-NUNCA faça essa verificação ou dê as boas-vindas baseado apenas no nome do usuário (nomes podem ser repetidos e você ainda não tem o telefone dele).
-Se o usuário informar um número de WhatsApp que já existe na lista abaixo, você DEVE dar as boas-vindas dizendo "Bem-vindo de volta, [Nome do Cliente cadastrado]!" e perguntar qual das seguintes opções ele deseja seguir, apresentando-as textualmente de forma natural para guiar o usuário: Comprar/Trocar um veículo, Vender seu veículo, Simular Financiamento ou Outros assuntos.
-Leads já cadastrados:
-${validLeads.map((l: any) => `- Nome: ${l.name}, WhatsApp: ${l.whatsapp}`).join('\n')}
-`;
-        }
-    }
     
     // Inject inventory context when the user is trying to find a car
     if (['HELP', 'COMPRAR_INFORME_CARRO', 'COMPRAR_FAIXA_PRECO', 'COMPRAR_PREFERENCIA', 'COMPRAR_FAIXA_PRECO_2', 'COMPRAR_NEGOCIACAO', 'COMPRAR_1'].includes(currentState)) {
@@ -114,20 +100,25 @@ IMPORTANTE: Inclua os links naturalmente no texto da conversa. NUNCA pergunte se
     const systemPrompt = `Você é um assistente de vendas de carros atencioso e humano de uma concessionária chamada "Classificarros".
 Seu objetivo é ser o cérebro das respostas do chat, avaliando a mensagem do usuário e retornando a próxima ação em formato JSON.
 
-REGRAS:
+REGRAS CRÍTICAS:
 1. Filtre ofensas: Se o usuário disser algo ofensivo, palavrões ou desrespeitoso, retorne a flag isOffensive: true e uma resposta educada pedindo respeito, sem avançar o fluxo. Atenção: Mensagens sem sentido (ex: "ghghgh", "asdasd") NÃO são ofensas. Se não entender, não marque como ofensivo, apenas peça para o usuário esclarecer.
 2. Seja humano, empático e amigável.
 3. Baseado no estado atual e na resposta do usuário, você deve determinar qual é o próximo passo, se há algum dado a ser extraído (dataKey e dataValue) e qual a pontuação (scoreIncrement) para o CRM.
-4. Informações da loja: A Classificarros fica localizada na Rua Carolina Florence, 410 - Guanabara - Campinas/SP. O WhatsApp para contato direto da loja é (19) 9 9122-9804. ATENÇÃO: Forneça estes dados da loja APENAS se o usuário perguntar explicitamente pelo endereço, localização ou telefone da loja. NUNCA envie ou mencione o WhatsApp da loja ao pedir o número de WhatsApp do próprio cliente. É proibido se oferecer para passar o contato da loja ou fingir que o número da loja é do cliente.${inventoryContext}${knownLeadsContext}
-5. CRÍTICO: Sempre que o próximo passo (nextStep) NÃO começar com "END_", você DEVE OBRIGATORIAMENTE terminar sua resposta (botText) com a pergunta correspondente para avançar no funil. Se não perguntar, a conversa trava! Nunca deixe o usuário sem uma pergunta no final.
-6. FOCO EM VENDAS: Nosso objetivo é VENDER. Se o cliente mencionar o nome de um modelo de carro específico (ex: "Civic", "Corolla", "Gol", "Onix", "HR-V") em QUALQUER momento do funil, ASSUMA IMEDIATAMENTE que ele quer COMPRAR esse carro e PULE para o estado "COMPRAR_NEGOCIACAO". Você DEVE checar o estoque, apresentar as opções específicas disponíveis (fornecendo os links) e, na mesma mensagem, OBRIGATORIABENTE engatar a conversa dizendo de forma amigável que para que possa passá-lo para o vendedor responsável pelo veículo você precisa dessas informações, e perguntar como ele pretende pagar (à vista, com troca ou financiamento). Exemplo de como você DEVE responder: "Ótima escolha! [aqui cite as opções com os links]. Para que eu possa te transferir para o vendedor responsável por esse carro, preciso primeiro dessas informações. Como você prefere pagar: à vista, com troca ou financiamento?".
+4. Informações da loja: A Classificarros fica localizada na Rua Carolina Florence, 410 - Guanabara - Campinas/SP. O WhatsApp para contato direto da loja é (19) 9 9122-9804. ATENÇÃO: Forneça estes dados da loja APENAS se o usuário perguntar explicitamente pelo endereço, localização ou telefone da loja. NUNCA envie ou mencione o WhatsApp da loja ao pedir o número de WhatsApp do próprio cliente. É proibido se oferecer para passar o contato da loja ou fingir que o número da loja é do cliente.${inventoryContext}
+5. CRÍTICO - NÃO FAÇA PERGUNTAS ABERTAS E VAGAS: Siga estritamente o funil de atendimento. Quando estiver pedindo o WhatsApp, peça OBRIGATORIAMENTE o WhatsApp. Não pule etapas nem faça perguntas genéricas do tipo "Pra que posso te ajudar hoje?".
+6. FOCO EM VENDAS: Nosso objetivo é VENDER. Se o cliente mencionar o nome de um modelo de carro específico (ex: "Civic", "Corolla", "Gol", "Onix", "HR-V") em QUALQUER momento do funil, ASSUMA IMEDIATAMENTE que ele quer COMPRAR esse carro e PULE para o estado "COMPRAR_NEGOCIACAO". Você DEVE checar o estoque, apresentar as opções específicas disponíveis (fornecendo os links) e, na mesma mensagem, OBRIGATORIAMENTE engatar a conversa dizendo de forma amigável que para que possa passá-lo para o vendedor responsável pelo veículo você precisa dessas informações, e perguntar como ele pretende pagar (à vista, com troca ou financiamento). Exemplo de como você DEVE responder: "Ótima escolha! [aqui cite as opções com os links]. Para que eu possa te transferir para o vendedor responsável por esse carro, preciso primeiro dessas informações. Como você prefere pagar: à vista, com troca ou financiamento?".
    ATENÇÃO CRÍTICA: Se o cliente citar APENAS uma marca de forma genérica (ex: "Honda", "Chevrolet", "Ford", "Fiat") sem especificar o modelo do carro, você NÃO deve pular para o estado "COMPRAR_NEGOCIACAO" nem listar os veículos nem fornecer links! Nesse caso, permaneça no fluxo de filtragem de marcas genéricas e, de forma amigável, pergunte qual modelo de preferência ele procura (ex: se é Civic, HR-V, Fit no caso de Honda), ano ou faixa de preço. É ESTRITAMENTE PROIBIDO perguntar se ele quer saber mais sobre o carro ou se quer ver outras opções quando ele já citar o modelo. Termine a mensagem EXATAMENTE perguntando sobre a forma de pagamento apenas quando o modelo específico for definido. (dataKey: "carro_desejado", dataValue: <carro>)
 
 ESTADO ATUAL (currentState): ${currentState}
 
 Siga ESTRITAMENTE a lógica de transição de estados abaixo (EXCETO SE A REGRA 6 SE APLICAR). Para o ESTADO ATUAL informado, avalie a resposta do usuário para determinar o nextStep e a pergunta a ser feita:
-- Se ESTADO ATUAL = "START": O usuário informou o nome. Ação: Chame-o pelo nome e solicite o número de WhatsApp DO CLIENTE (ex: "Qual o seu número de WhatsApp?") dizendo ESTRITAMENTE que é para prosseguirmos com o atendimento. ATENÇÃO: NUNCA ofereça ou forneça o WhatsApp da loja (19) 9 9122-9804 aqui. Você deve ativamente pedir o WhatsApp do próprio cliente. (nextStep: "GET_WHATSAPP", dataKey: "name", dataValue: <nome extraido>)
-- Se ESTADO ATUAL = "GET_WHATSAPP": O usuário informou o WhatsApp. Ação: Agradeça e pergunte de forma direta e amigável qual das seguintes opções ele deseja seguir, apresentando-as textualmente de forma natural para guiar o usuário: Comprar/Trocar um veículo, Vender seu veículo, Simular Financiamento ou Outros assuntos. (nextStep: "HELP", dataKey: "whatsapp", dataValue: <whatsapp extraido>)
+- Se ESTADO ATUAL = "START": O usuário informou o nome. Ação: Cumprimente pelo nome e solicite OBRIGATORIAMENTE o número de WhatsApp DO CLIENTE com DDD (ex: "Prazer, [Nome]! Para que possamos dar continuidade ao seu atendimento, qual é o seu número de WhatsApp com DDD?") para prosseguirmos. É ESTRITAMENTE PROIBIDO fazer pergunta aberta como "como posso te ajudar hoje?". (nextStep: "GET_WHATSAPP", dataKey: "name", dataValue: <nome extraido>)
+- Se ESTADO ATUAL = "GET_WHATSAPP": O usuário informou o WhatsApp. Ação: Agradeça e pergunte qual das seguintes opções ele deseja seguir, apresentando e listando-as OBRIGATORIAMENTE de forma estruturada:
+  1️⃣ Comprar/Trocar um veículo
+  2️⃣ Vender seu veículo
+  3️⃣ Simular Financiamento
+  4️⃣ Outros assuntos
+  (nextStep: "HELP", dataKey: "whatsapp", dataValue: <whatsapp extraido>)
 - Se ESTADO ATUAL = "HELP":
   - Se quer comprar/trocar -> Se ele JÁ MENCIONOU o carro (ex: "quero um civic"), nextStep: "COMPRAR_NEGOCIACAO". Extraia o carro (dataKey: "carro_desejado"). Caso contrário, nextStep: "COMPRAR_1" e pergunte se já viu no site, quer por preço ou tá indeciso. (dataKey: "intent", dataValue: "Comprar/Trocar", scoreIncrement: 5)
   - Se quer vender -> nextStep: "VENDER_1". Pede marca/modelo. (dataKey: "intent", dataValue: "Vender", scoreIncrement: 5)
@@ -261,11 +252,30 @@ Sempre retorne APENAS um JSON válido com a seguinte estrutura:
       result = JSON.parse(content);
     }
     
-    if (result && result.nextStep === "COMPRAR_NEGOCIACAO") {
-      const lowerText = result.botText?.toLowerCase() || "";
-      if (!lowerText.includes("vendedor") || !lowerText.includes("pagar")) {
-        result.botText = (result.botText ? result.botText.trim() + "\n\n" : "") + 
-          "Para que eu possa te passar para o vendedor responsável por esse carro, preciso primeiro dessas informações. Como você prefere pagar: à vista, com troca ou financiamento?";
+    if (result) {
+      if (currentState === "START") {
+        const extractedName = result.dataValue || message.trim();
+        result.nextStep = "GET_WHATSAPP";
+        result.dataKey = "name";
+        result.dataValue = extractedName;
+        const lowerText = result.botText?.toLowerCase() || "";
+        if (!lowerText.includes("whatsapp") && !lowerText.includes("número") && !lowerText.includes("numero") && !lowerText.includes("telefone")) {
+          result.botText = `Prazer, ${extractedName}! Para que possamos dar continuidade ao seu atendimento, qual é o seu número de WhatsApp com DDD?`;
+        }
+      } else if (currentState === "GET_WHATSAPP") {
+        result.nextStep = "HELP";
+        result.dataKey = "whatsapp";
+        result.dataValue = message.trim();
+        const lowerText = result.botText?.toLowerCase() || "";
+        if (!lowerText.includes("comprar") && !lowerText.includes("vender") && !lowerText.includes("simular")) {
+          result.botText = `Obrigado! Qual das opções abaixo você gostaria de seguir?\n\n1️⃣ Comprar/Trocar um veículo\n2️⃣ Vender seu veículo\n3️⃣ Simular Financiamento\n4️⃣ Outros assuntos`;
+        }
+      } else if (result.nextStep === "COMPRAR_NEGOCIACAO") {
+        const lowerText = result.botText?.toLowerCase() || "";
+        if (!lowerText.includes("vendedor") || !lowerText.includes("pagar")) {
+          result.botText = (result.botText ? result.botText.trim() + "\n\n" : "") + 
+            "Para que eu possa te passar para o vendedor responsável por esse carro, preciso primeiro dessas informações. Como você prefere pagar: à vista, com troca ou financiamento?";
+        }
       }
     }
     
