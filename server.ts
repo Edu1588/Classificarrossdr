@@ -14,6 +14,23 @@ app.use(express.json());
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
 
+// Inventory Cache
+let cachedVehicles: any[] = [];
+let lastFetchTime = 0;
+
+async function getVehicles() {
+  if (Date.now() - lastFetchTime > 1000 * 60 * 60) { // 1 hour cache
+    try {
+      const res = await fetch("https://classificarros.com.br/vehicles.json");
+      cachedVehicles = await res.json();
+      lastFetchTime = Date.now();
+    } catch (e) {
+      console.error("Erro ao buscar veículos", e);
+    }
+  }
+  return cachedVehicles;
+}
+
 // API routes FIRST
 app.post("/api/chat", async (req, res) => {
   if (!process.env.GEMINI_API_KEY && !process.env.GROQ_API_KEY) {
@@ -22,6 +39,42 @@ app.post("/api/chat", async (req, res) => {
 
   try {
     const { message, conversationHistory, currentState } = req.body;
+    
+    let inventoryContext = "";
+    
+    // Inject inventory context when the user is trying to find a car
+    if (['COMPRAR_INFORME_CARRO', 'COMPRAR_FAIXA_PRECO', 'COMPRAR_PREFERENCIA', 'COMPRAR_FAIXA_PRECO_2', 'COMPRAR_NEGOCIACAO', 'COMPRAR_1'].includes(currentState)) {
+       const vehicles = await getVehicles();
+       // Basic search to find matching vehicles
+       const searchTerms = message.toLowerCase().split(' ').filter((w: string) => w.length > 2);
+       
+       let matchedVehicles = vehicles.filter((v: any) => {
+          const searchString = `${v.brand} ${v.model} ${v.version} ${v.manufacturingYear} ${v.color} ${v.price}`.toLowerCase();
+          // Find vehicles where at least one term matches, or just pass a few if none
+          return searchTerms.some((term: string) => searchString.includes(term));
+       });
+       
+       if (matchedVehicles.length === 0 && searchTerms.length === 0) {
+           matchedVehicles = vehicles;
+       }
+
+       // Pick top 5 matches
+       matchedVehicles = matchedVehicles.slice(0, 5);
+       
+       if (matchedVehicles.length > 0) {
+          inventoryContext = `\n\n[INFORMAÇÃO DE SISTEMA: VEÍCULOS NO ESTOQUE DA LOJA DISPONÍVEIS]
+Abaixo estão opções REAIS do estoque da loja que batem com a busca do usuário.
+VOCÊ DEVE OFERECER E RECOMENDAR ESSES VEÍCULOS citando a Marca, Modelo, Preço, Ano, KM e SEMPRE enviar o LINK do veículo na sua resposta (botText) para que o cliente clique e veja as fotos no site.
+
+Veículos disponíveis agora:
+${matchedVehicles.map((v: any) => `- ${v.brand} ${v.model} ${v.version} (${v.manufacturingYear}/${v.modelYear}) - R$ ${v.price.toLocaleString('pt-BR')} - KM: ${v.mileage} - Link: https://classificarros.com.br/veiculos/${v.externalId}/`).join('\n')}
+
+IMPORTANTE: Inclua os links naturalmente no texto da conversa. Se não houver muitos veículos exatamente como ele quer, ofereça o mais próximo.
+`;
+       } else {
+          inventoryContext = `\n\n[INFORMAÇÃO DE SISTEMA] No momento, não encontramos nenhum veículo exatamente com essa descrição no estoque. Seja empático, diga que talvez não tenha no momento mas que pode verificar opções parecidas ou pegar o pedido dele.`;
+       }
+    }
 
     const systemPrompt = `Você é um assistente de vendas de carros atencioso e humano de uma concessionária chamada "Classificarros".
 Seu objetivo é ser o cérebro das respostas do chat, avaliando a mensagem do usuário e retornando a próxima ação em formato JSON.
@@ -30,7 +83,7 @@ REGRAS:
 1. Filtre ofensas: Se o usuário disser algo ofensivo, palavrões ou desrespeitoso, retorne a flag isOffensive: true e uma resposta educada pedindo respeito, sem avançar o fluxo. Atenção: Mensagens sem sentido (ex: "ghghgh", "asdasd") NÃO são ofensas. Se não entender, não marque como ofensivo, apenas peça para o usuário esclarecer.
 2. Seja humano, empático e amigável.
 3. Baseado no estado atual e na resposta do usuário, você deve determinar qual é o próximo passo, se há algum dado a ser extraído (dataKey e dataValue) e qual a pontuação (scoreIncrement) para o CRM.
-4. Informações da loja: A Classificarros fica localizada na Rua Carolina Florence, 410 - Guanabara - Campinas/SP. O WhatsApp para contato direto é (19) 9 9122-9804. Forneça estas informações se o usuário perguntar.
+4. Informações da loja: A Classificarros fica localizada na Rua Carolina Florence, 410 - Guanabara - Campinas/SP. O WhatsApp para contato direto é (19) 9 9122-9804. Forneça estas informações se o usuário perguntar.${inventoryContext}
 
 ESTADO ATUAL (currentState): ${currentState}
 
