@@ -36,39 +36,6 @@ const renderMessageText = (text: string) => {
   });
 };
 
-const getQuickRepliesForStep = (currentStep: string) => {
-  switch (currentStep) {
-    case 'HELP':
-      return [
-        { label: '1️⃣ Comprar/Trocar', value: 'Quero comprar ou trocar um veículo' },
-        { label: '2️⃣ Vender meu carro', value: 'Quero vender meu veículo' },
-        { label: '3️⃣ Simular Financiamento', value: 'Quero simular um financiamento' },
-        { label: '4️⃣ Outros Assuntos', value: 'Outros assuntos' }
-      ];
-    case 'COMPRAR_1':
-      return [
-        { label: '👀 Já vi no site', value: 'Já vi no site e sei qual carro quero' },
-        { label: '💵 Buscar por preço', value: 'Quero ver carros por faixa de preço' },
-        { label: '🤷 Estou indeciso', value: 'Estou indeciso e quero ajuda' }
-      ];
-    case 'COMPRAR_NEGOCIACAO':
-      return [
-        { label: '💵 À vista', value: 'À vista' },
-        { label: '🚗 Com troca', value: 'Com troca' },
-        { label: '🏦 Financiamento', value: 'Financiamento' },
-        { label: '🔄 Troca + Financiamento', value: 'Troca + Financiamento' }
-      ];
-    case 'VENDER_AVALIACAO':
-      return [
-        { label: '❌ Ainda não avaliei', value: 'Ainda não avaliei' },
-        { label: '📢 Estou anunciando', value: 'Estou anunciando' },
-        { label: '✅ Já avaliei', value: 'Já avaliei' }
-      ];
-    default:
-      return [];
-  }
-};
-
 export default function ChatWidget() {
   const { currentLead, setCurrentLead, addOrUpdateLead } = useLead();
   const [isOpen, setIsOpen] = useState(false);
@@ -228,21 +195,6 @@ export default function ChatWidget() {
                         <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></div>
                      </div>
                   </motion.div>
-                )}
-
-                {!isTyping && getQuickRepliesForStep(step).length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-2 justify-end w-full">
-                    {getQuickRepliesForStep(step).map((opt) => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => handleSend(opt.value)}
-                        className="px-3.5 py-2 bg-white hover:bg-emerald-50 text-[#128c7e] hover:text-[#075e54] text-xs font-semibold rounded-full border border-emerald-200 shadow-sm transition-all hover:scale-105"
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
                 )}
               </AnimatePresence>
               <div ref={messagesEndRef} />
